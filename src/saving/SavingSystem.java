@@ -34,6 +34,8 @@ public class SavingSystem {
             e.printStackTrace();
         }
     }
+    return newSave;
+  }
 
     public static Save load(String player) {
         String sql = "SELECT * FROM saves WHERE player = ?";
@@ -94,6 +96,8 @@ public class SavingSystem {
             e.printStackTrace();
         }
     }
+    return ss;
+  }
 
     public static void addPlayerName(String player) {
         if (!player.isEmpty()) {
@@ -108,6 +112,7 @@ public class SavingSystem {
             }
         }
     }
+    ArrayList<Save> saves2 = new ArrayList<Save>();
 
     public static boolean isValid(String name) {
         String sql = "SELECT 1 FROM saves WHERE player = ?";
@@ -169,4 +174,5 @@ public class SavingSystem {
         }
         return "";
     }
+  }
 }
