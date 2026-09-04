@@ -1,66 +1,70 @@
+/**
+ * A standalone Java exercise component.
+ */
 package gameCore;
 
 import java.awt.*;
 
 public abstract class GameObject {
-    protected double x, y;
-    protected ID id;
-    protected double velX, velY;
-    protected double health;
-    protected double damage;
+  protected double x, y;
+  protected ID id;
+  protected double velX, velY;
+  protected double health;
+  protected double damage;
 
-    public double getDamage(){
-        return damage;
-    }
-    public double getX() {
-        return x;
-    }
+  public double getDamage() {
+    return damage;
+  }
 
-    public void setX(double x) {
-        this.x = x;
-    }
+  public double getX() {
+    return x;
+  }
 
-    public double getY() {
-        return y;
-    }
+  public void setX(double x) {
+    this.x = x;
+  }
 
-    public void setY(double y) {
-        this.y = y;
-    }
+  public double getY() {
+    return y;
+  }
 
-    public ID getId() {
-        return id;
-    }
+  public void setY(double y) {
+    this.y = y;
+  }
 
-    public void setId(ID id) {
-        this.id = id;
-    }
+  public ID getId() {
+    return id;
+  }
 
-    public double getVelX() {
-        return velX;
-    }
+  public void setId(ID id) {
+    this.id = id;
+  }
 
-    public void setVelX(double velX) {
-        this.velX = velX;
-    }
+  public double getVelX() {
+    return velX;
+  }
 
-    public double getVelY() {
-        return velY;
-    }
+  public void setVelX(double velX) {
+    this.velX = velX;
+  }
 
-    public void setVelY(double velY) {
-        this.velY = velY;
-    }
+  public double getVelY() {
+    return velY;
+  }
 
-    public GameObject(double x, double y, ID id) {
-        this.x = x;
-        this.y = y;
-        this.id = id;
-    }
+  public void setVelY(double velY) {
+    this.velY = velY;
+  }
 
-    public abstract void tick();
+  public GameObject(double x, double y, ID id) {
+    this.x = x;
+    this.y = y;
+    this.id = id;
+  }
 
-    public abstract void render(Graphics g);
+  public abstract void tick();
 
-    public abstract Rectangle getBounds();
+  public abstract void render(Graphics g);
+
+  public abstract Rectangle getBounds();
 }

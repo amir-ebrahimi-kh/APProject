@@ -1,0 +1,9 @@
+*.class
+bin/
+.vscode/
+.idea/
+.settings/
+.classpath
+.project
+*.iml
+game.data.db
