@@ -4,7 +4,7 @@ This repository contains standalone Java code exercises, demonstrating straightf
 
 ## Compilation and Execution
 
-Since the code depends on external libraries (like `slick.jar`, `lwjgl.jar`, and `gson.jar` which were previously used by the IDE configuration), you will need to provide these dependencies in order to compile and run the project manually using basic `javac` and `java` commands.
+Since the code depends on external libraries (like `slick.jar`, `lwjgl.jar`, `gson.jar`, and `sqlite-jdbc.jar` which were previously used by the IDE configuration), you will need to provide these dependencies in order to compile and run the project manually using basic `javac` and `java` commands.
 
 Assuming you place the necessary JAR files inside a `lib/` folder:
 

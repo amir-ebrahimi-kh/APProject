@@ -3,204 +3,176 @@
  */
 package saving;
 
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.PrintWriter;
-import java.lang.reflect.Type;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Scanner;
 
 public class SavingSystem {
 
-  private static File file = new File("game.data.txt");
-  private static ArrayList<Save> saves = new ArrayList<Save>();
-  private static Type collectionType = new TypeToken<ArrayList<Save>>() {}.getType();
+    private static final String URL = "jdbc:sqlite:game.data.db";
 
-  private static void readFromFile() throws Exception {
-
-    Scanner loader = new Scanner(file);
-    String st = loader.nextLine();
-    loader.close();
-    saves = new Gson().fromJson(st, collectionType);
-  }
-
-  private static void writeToFile() {
-    String st = new Gson().toJson(saves);
-    try {
-      PrintWriter pw = new PrintWriter(file);
-      pw.print(st);
-      pw.close();
-    } catch (FileNotFoundException e) {
-      e.printStackTrace();
-    }
-  }
-
-  public static Save load(String player) {
-
-    try {
-      readFromFile();
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    Save newSave = new Save(player);
-    for (int index = saves.size() - 1; index >= 0; index--) {
-      if (saves.get(index).player.equals(player)) {
-        newSave = saves.get(index);
-        break;
-      }
+    static {
+        try (Connection conn = DriverManager.getConnection(URL);
+             Statement stmt = conn.createStatement()) {
+            String sql = "CREATE TABLE IF NOT EXISTS saves (\n"
+                    + " player text PRIMARY KEY,\n"
+                    + " game_level integer,\n"
+                    + " score integer,\n"
+                    + " bullet integer,\n"
+                    + " bullet_level integer,\n"
+                    + " bombs integer,\n"
+                    + " lifes integer,\n"
+                    + " coins integer,\n"
+                    + " maxTemp integer\n"
+                    + ");";
+            stmt.execute(sql);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
     return newSave;
   }
 
-  public static void save(Save save) {
-
-    boolean saveUpdated = false;
-    boolean firstSave = false;
-    try {
-      readFromFile();
-    } catch (Exception e) {
-      firstSave = true;
-    }
-    if (firstSave) {
-      saves.clear();
-      saves.add(save);
-    } else {
-      for (Save save2 : saves) {
-        if (save2.player.equals(save.player)) {
-          save2.stats = save.stats;
-          saveUpdated = true;
+    public static Save load(String player) {
+        String sql = "SELECT * FROM saves WHERE player = ?";
+        try (Connection conn = DriverManager.getConnection(URL);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, player);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                Stats stats = new Stats();
+                stats.game_level = rs.getInt("game_level");
+                stats.score = rs.getInt("score");
+                stats.bullet = rs.getInt("bullet");
+                stats.bullet_level = rs.getInt("bullet_level");
+                stats.bombs = rs.getInt("bombs");
+                stats.lifes = rs.getInt("lifes");
+                stats.coins = rs.getInt("coins");
+                stats.maxTemp = rs.getInt("maxTemp");
+                return new Save(player, stats);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
-      }
-      if (!saveUpdated) {
-        saves.add(save);
-      }
+        return new Save(player);
     }
-    writeToFile();
-  }
 
-  private static ArrayList<String> loadPlayerNames() {
+    public static void save(Save save) {
+        String sql = "INSERT INTO saves (player, game_level, score, bullet, bullet_level, bombs, lifes, coins, maxTemp) "
+                   + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?) "
+                   + "ON CONFLICT(player) DO UPDATE SET "
+                   + "game_level=excluded.game_level, score=excluded.score, bullet=excluded.bullet, "
+                   + "bullet_level=excluded.bullet_level, bombs=excluded.bombs, lifes=excluded.lifes, "
+                   + "coins=excluded.coins, maxTemp=excluded.maxTemp";
 
-    boolean firstLoad = false;
-    try {
-      readFromFile();
-    } catch (Exception e1) {
-      firstLoad = true;
+        try (Connection conn = DriverManager.getConnection(URL);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, save.player);
+            pstmt.setInt(2, save.stats.game_level);
+            pstmt.setInt(3, save.stats.score);
+            pstmt.setInt(4, save.stats.bullet);
+            pstmt.setInt(5, save.stats.bullet_level);
+            pstmt.setInt(6, save.stats.bombs);
+            pstmt.setInt(7, save.stats.lifes);
+            pstmt.setInt(8, save.stats.coins);
+            pstmt.setInt(9, save.stats.maxTemp);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
-    ArrayList<String> ss = new ArrayList<String>();
-    if (!firstLoad) {
-      for (Save save : saves) {
-        ss.add(save.player);
-      }
+
+    public static void deletePlayerName(String player) {
+        String sql = "DELETE FROM saves WHERE player = ?";
+        try (Connection conn = DriverManager.getConnection(URL);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, player);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
     return ss;
   }
 
-  public static void deletePlayerName(String player) {
-
-    try {
-      readFromFile();
-    } catch (Exception e) {
+    public static void addPlayerName(String player) {
+        if (!player.isEmpty()) {
+            String sql = "INSERT OR IGNORE INTO saves (player, game_level, score, bullet, bullet_level, bombs, lifes, coins, maxTemp) "
+                       + "VALUES(?, 1, 0, 0, 1, 3, 5, 0, 100)";
+            try (Connection conn = DriverManager.getConnection(URL);
+                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setString(1, player);
+                pstmt.executeUpdate();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
     }
     ArrayList<Save> saves2 = new ArrayList<Save>();
 
-    for (Save save : saves) {
-      if (!save.player.equals(player)) {
-        saves2.add(save);
-      }
-    }
-    saves = saves2;
-    writeToFile();
-  }
-
-  public static void addPlayerName(String player) {
-    if (!player.equals("")) {
-      boolean alreadyExists = false;
-      boolean firstSave = false;
-      try {
-        readFromFile();
-      } catch (Exception e) {
-        firstSave = true;
-      }
-      if (firstSave) {
-        saves.clear();
-        saves.add(new Save(player));
-      } else {
-        for (Save save2 : saves) {
-          if (save2.player.equals(player)) {
-            alreadyExists = true;
-            break;
-          }
+    public static boolean isValid(String name) {
+        String sql = "SELECT 1 FROM saves WHERE player = ?";
+        try (Connection conn = DriverManager.getConnection(URL);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, name);
+            ResultSet rs = pstmt.executeQuery();
+            return rs.next();
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
-        if (!alreadyExists) {
-          saves.add(new Save(player));
+        return false;
+    }
+
+    public static int size() {
+        String sql = "SELECT COUNT(*) AS total FROM saves";
+        try (Connection conn = DriverManager.getConnection(URL);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            if (rs.next()) {
+                return rs.getInt("total");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
-      }
-      writeToFile();
+        return 0;
     }
-  }
 
-  public static boolean isValid(String name) {
-    boolean firstrun = false;
-    boolean isin = false;
-    try {
-      readFromFile();
-    } catch (Exception e) {
-      firstrun = true;
-    }
-    if (!firstrun) {
-      for (Save save : saves) {
-        if (save.player.equals(name)) {
-          isin = true;
-          break;
+    public static String getListPlayers() {
+        StringBuilder st = new StringBuilder();
+        String sql = "SELECT player FROM saves";
+        try (Connection conn = DriverManager.getConnection(URL);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                st.append(rs.getString("player")).append("\n");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
-      }
+        return st.toString();
     }
-    return isin;
-  }
 
-  public static int size() {
-    return saves.size();
-  }
-
-  public static String getListPlayers() {
-    ArrayList<String> s = loadPlayerNames();
-    String st = "";
-    if (s.size() > 0) {
-      for (int i = 0; i < s.size(); i++) {
-        st = st + s.get(i) + "\n";
-      }
-    }
-    return st;
-  }
-
-  public static String getHallOfFame(int i) {
-    try {
-      readFromFile();
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    ArrayList<Save> s = saves;
-    s.sort(new SaveComparator());
-    return s.get(i).player
-        + "                                         "
-        + s.get(i).stats.game_level
-        + "                                            "
-        + s.get(i).stats.score;
-  }
-}
-
-class SaveComparator implements Comparator<Save> {
-  @Override
-  public int compare(Save o1, Save o2) {
-    if (o1.stats.game_level > o2.stats.game_level) return -1;
-    else if (o1.stats.game_level < o2.stats.game_level) return 1;
-    else {
-      if (o1.stats.score > o2.stats.score) return -1;
-      else if (o1.stats.score < o2.stats.score) return 1;
-      else return 0;
+    public static String getHallOfFame(int i) {
+        String sql = "SELECT player, game_level, score FROM saves ORDER BY game_level DESC, score DESC LIMIT 1 OFFSET ?";
+        try (Connection conn = DriverManager.getConnection(URL);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, i);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getString("player")
+                        + "                                         "
+                        + rs.getInt("game_level")
+                        + "                                            "
+                        + rs.getInt("score");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return "";
     }
   }
 }
